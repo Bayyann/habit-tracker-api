@@ -1,12 +1,14 @@
+from datetime import date, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from ..database import get_session
 from ..deps import get_current_user
-from ..models import Habit, User
-from ..schemas import HabitCreate, HabitRead, HabitUpdate
+from ..models import CheckIn, Habit, User
+from ..schemas import CheckInResult, HabitCreate, HabitRead, HabitUpdate
 
 router = APIRouter(prefix="/api/habits", tags=["habits"])
 
@@ -93,6 +95,46 @@ def delete_habit(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.post(
+    "/{habit_id}/check-in",
+    response_model=CheckInResult,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_check_in(
+    habit_id: int,
+    session: Annotated[Session, Depends(get_session)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    _get_owned_habit(habit_id, current_user, session)
+    today = date.today()
+    existing_check_in = session.exec(
+        select(CheckIn).where(
+            CheckIn.habit_id == habit_id,
+            CheckIn.day == today,
+        )
+    ).first()
+    if existing_check_in is not None:
+        raise HTTPException(status_code=400, detail="Habit already checked in today")
+
+    check_in = CheckIn(habit_id=habit_id, day=today)
+    session.add(check_in)
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        # The unique constraint also protects against two requests arriving together.
+        session.rollback()
+        raise HTTPException(status_code=400, detail="Habit already checked in today") from exc
+    session.refresh(check_in)
+
+    check_in_days = session.exec(
+        select(CheckIn.day)
+        .where(CheckIn.habit_id == habit_id)
+        .order_by(CheckIn.day.desc())
+    ).all()
+    current_streak = _count_streak(check_in_days, today)
+    return CheckInResult(check_in=check_in, current_streak=current_streak)
+
+
 def _get_owned_habit(habit_id: int, current_user: User, session: Session) -> Habit:
     statement = select(Habit).where(
         Habit.id == habit_id,
@@ -102,3 +144,13 @@ def _get_owned_habit(habit_id: int, current_user: User, session: Session) -> Hab
     if habit is None:
         raise HTTPException(status_code=404, detail="Habit not found")
     return habit
+
+
+def _count_streak(check_in_days: list[date], today: date) -> int:
+    days = set(check_in_days)
+    streak = 0
+    day = today
+    while day in days:
+        streak += 1
+        day -= timedelta(days=1)
+    return streak

@@ -45,3 +45,16 @@ class HabitRead(BaseModel):
     deadline: Optional[date]
     user_id: int
     created_at: datetime
+
+
+class CheckInRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    habit_id: int
+    day: date
+
+
+class CheckInResult(BaseModel):
+    check_in: CheckInRead
+    current_streak: int
