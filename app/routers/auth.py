@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api", tags=["auth"])
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 def register(
     user_data: UserCreate,
-    session: Annotated[Session, Depends(get_session)],
+    session: Annotated[Session, Depends(get_session)], #dependancy injection
 ):
     username = user_data.username.strip()
     if not username or not user_data.password:

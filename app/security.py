@@ -26,3 +26,14 @@ def create_access_token(username: str) -> str:
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_MINUTES)
     payload = {"sub": username, "exp": expires_at}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def verify_password_hash(password: str, hashed_password: str) -> bool:
+    """Verify a password hash stored by the application's bcrypt hasher."""
+    try:
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            hashed_password.encode("utf-8"),
+        )
+    except (ValueError, TypeError):
+        return False

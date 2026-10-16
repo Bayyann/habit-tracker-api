@@ -14,6 +14,7 @@ class UserRead(BaseModel):
 
     id: int
     username: str
+    is_admin: bool
 
 
 class Token(BaseModel):
@@ -45,6 +46,7 @@ class HabitRead(BaseModel):
     deadline: Optional[date]
     user_id: int
     created_at: datetime
+    completed_check_ins: int = 0
 
 
 class CheckInRead(BaseModel):
@@ -58,3 +60,4 @@ class CheckInRead(BaseModel):
 class CheckInResult(BaseModel):
     check_in: CheckInRead
     current_streak: int
+    completed_check_ins: int
