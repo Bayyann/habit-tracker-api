@@ -35,7 +35,3 @@ To create a separate administrator login (recommended, so it does not depend on 
 ```
 
 The command prompts for a password without echoing it; choose a strong password and keep it private. To grant access to a different existing account, use `.venv\Scripts\python.exe -m app.admin_cli YOUR_USERNAME`. To revoke access, use `.venv\Scripts\python.exe -m app.admin_cli --revoke YOUR_USERNAME`. Keep `SESSION_SECRET_KEY` private and set it to a long random value outside development; SQLAdmin uses it to sign secure sessions. User, habit, and check-in records are read-only through SQLAdmin. The user list does not expose password hashes.
-
-## API-backed progress limitations
-
-The API returns each habit's total completed check-ins and goal target. The check-in endpoint also returns the current streak. Individual historical check-in dates are not currently exposed in the habit list response, so the dashboard's `TODAY'S CHECK-INS` count reflects check-ins recorded during the current browser session only.
